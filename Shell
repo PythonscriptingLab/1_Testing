@@ -1,1 +1,4 @@
-Test
+FIDS=$(ps -eo user | sort | uniq)
+
+echo "List of all unique FIDs running on the machine:"
+    echo "$FIDS"
