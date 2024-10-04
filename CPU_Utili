@@ -50,8 +50,13 @@ TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in 
     echo "Running Processes: $RUNNING_PROCESSES"
     print_header "Top 5 Memory-Consuming Processes"
     echo "$TOP_MEMORY_PROCESSES"
+    echo "*****"
     print_header "Top 5 CPU-Consuming Processes"
-    echo "$TOP_CPU_PROCESSES"
+    ps aux --sort=-%cpu -o pid,%cpu,cmd | head -n 6 | while read -r pid cpu cmd; do
+        echo "PID: $pid | CPU: $cpu%"
+        echo "Command: $(echo "$cmd" | cut -c 1-300)"
+        echo "*****"
+    done
     print_header "Per-Core CPU Utilization"
     echo "$MPSTAT_OUTPUT"
     print_header "Detailed CPU Stats (iostat)"
@@ -73,11 +78,11 @@ SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1
 echo
 print_header "Top 10 CPU-consuming processes for FID '$SELECTED_FID'"
 # Display truncated command line for readability and save full command to file
-echo "PID     %CPU   COMMAND"
-ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | while read -r pid cpu cmd; do
-    truncated_cmd=$(echo "$cmd" | cut -c 1-100) # Limit to 100 characters
-    printf "%-8s %-5s %s\n" "$pid" "$cpu" "$truncated_cmd"
-    echo "$pid $cpu $cmd" >> "$OUTPUT_FILE" # Full command in the file
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | while read -r pid cpu cmd; do
+    echo "PID: $pid | CPU: $cpu%"
+    echo "Command: $(echo "$cmd" | cut -c 1-300)"
+    echo "*****"
+    echo "$pid $cpu $cmd" >> "$OUTPUT_FILE" # Save full command to file
 done
 print_header "End of Report"
 echo "Detailed information saved to: $OUTPUT_FILE"
