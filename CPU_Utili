@@ -1,0 +1,114 @@
+#!/bin/bash
+
+# 1. Capture date and time
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+
+# 2. Define directory and file path
+OUTPUT_DIR="/tmp/CPU_Utilization"
+OUTPUT_FILE="$OUTPUT_DIR/CPU_Utilization_$TIMESTAMP.txt"
+
+# 3. Check if the directory exists, if not create it
+if [ ! -d "$OUTPUT_DIR" ]; then
+    mkdir -p "$OUTPUT_DIR"
+fi
+
+# 4. Capture hostname
+HOSTNAME=$(hostname)
+
+# 5. Capture CPU utilization using 'top' command
+CPU_USAGE_TOP=$(top -b -n1 | grep "Cpu(s)" | awk '{print $2 + $4}')
+
+# 6. Capture CPU utilization using 'vmstat' command
+CPU_USAGE_VMSTAT=$(vmstat 1 2 | tail -1 | awk '{print $13+$14}')
+
+# 7. Capture per-core CPU usage using 'mpstat' command (from sysstat package)
+MPSTAT_OUTPUT=$(mpstat -P ALL 1 1)
+
+# 8. Capture detailed CPU statistics using 'iostat' command
+IOSTAT_OUTPUT=$(iostat -c 1 1)
+
+# 9. Read CPU utilization data directly from /proc/stat file
+PROC_STAT=$(cat /proc/stat | grep '^cpu ' | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage}')
+
+# 10. Capture disk usage of the root '/' partition using 'df -h'
+DISK_USAGE=$(df -h / | grep / | awk '{print $5}')
+
+# 11. Capture memory usage using 'free' command
+MEMORY_USAGE=$(free -h | grep "Mem:" | awk '{print "Total: "$2", Used: "$3", Free: "$4}')
+
+# 12. Capture system uptime and load average using 'uptime'
+UPTIME=$(uptime -p)
+LOAD_AVG=$(uptime | awk -F'load average:' '{ print $2 }')
+
+# 13. Capture number of active TCP connections using 'ss' (if installed) or 'netstat'
+TCP_CONNECTIONS=$(ss -t | wc -l)
+
+# 14. Capture number of running processes using 'ps'
+RUNNING_PROCESSES=$(ps -e --no-headers | wc -l)
+
+# 15. Capture top 5 memory-hogging processes
+TOP_MEMORY_PROCESSES=$(ps aux --sort=-%mem | head -n 6)
+
+# 16. Capture top 5 CPU-hogging processes
+TOP_CPU_PROCESSES=$(ps aux --sort=-%cpu | head -n 6)
+
+# 17. Calculate top 5 FIDs by total CPU utilization
+TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in cpu) print u, cpu[u]}' | sort -k2 -nr | head -n 5)
+
+# 18. Display the top 5 FIDs to the user
+echo "Top 5 FIDs by Total CPU Utilization:"
+echo "No. FID       Total CPU%"
+echo "$TOP_FID_CPU" | nl -w2 -s'. '
+
+# 19. Prompt the user to select an FID
+echo
+read -p "Enter the number of the FID you want to view detailed process info for: " FID_SELECTION
+
+# 20. Extract the FID based on the user's selection
+SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1}')
+
+# 21. Display the top 10 CPU-consuming processes for the selected FID
+echo
+echo "Top 10 CPU-consuming processes for FID '$SELECTED_FID':"
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,comm | head -n 10 | tee -a "$OUTPUT_FILE"
+
+# 22. Write the main system information and top FIDs to the output file
+{
+    echo "[$DATE] Hostname: $HOSTNAME"
+    echo "CPU Utilization (top): $CPU_USAGE_TOP%"
+    echo "CPU Utilization (vmstat): $CPU_USAGE_VMSTAT%"
+    echo "Disk Usage: $DISK_USAGE"
+    echo
+    echo "Memory Usage:"
+    echo "$MEMORY_USAGE"
+    echo
+    echo "Uptime: $UPTIME"
+    echo "Load Average: $LOAD_AVG"
+    echo
+    echo "Active TCP Connections: $TCP_CONNECTIONS"
+    echo "Number of Running Processes: $RUNNING_PROCESSES"
+    echo
+    echo "Top 5 Memory-Hogging Processes:"
+    echo "$TOP_MEMORY_PROCESSES"
+    echo
+    echo "Top 5 CPU-Hogging Processes:"
+    echo "$TOP_CPU_PROCESSES"
+    echo
+    echo "Per-core CPU Utilization (mpstat):"
+    echo "$MPSTAT_OUTPUT"
+    echo
+    echo "Detailed CPU stats (iostat):"
+    echo "$IOSTAT_OUTPUT"
+    echo
+    echo "CPU Usage from /proc/stat: $PROC_STAT%"
+    echo
+    echo "Top 5 FIDs by Total CPU Utilization:"
+    echo "$TOP_FID_CPU"
+    echo
+    echo "Top 10 CPU-consuming processes for FID '$SELECTED_FID':"
+    ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,comm | head -n 10
+} >> "$OUTPUT_FILE"
+
+# Confirm that the information has been saved
+echo "Detailed CPU utilization for FID '$SELECTED_FID' saved to $OUTPUT_FILE"
