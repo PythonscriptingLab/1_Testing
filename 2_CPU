@@ -67,7 +67,7 @@ TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in 
     echo "*****"
     
     print_header "Top 5 CPU-Consuming Processes"
-    ps aux --sort=-%cpu -o pid,%cpu,cmd | head -n 6 | while read -r pid cpu cmd; do
+    ps aux --sort=-%cpu | awk '{print $2, $3, substr($0, index($0, $11))}' | head -n 6 | while read -r pid cpu cmd; do
         echo "PID: $pid | CPU: $cpu%"
         echo "Command: $(echo "$cmd" | cut -c 1-300)"
         echo "*****"
