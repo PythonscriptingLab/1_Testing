@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Helper function for headers with clear separation
+print_header() {
+    echo
+    echo "====== $1 ======"
+}
+
+# Capture date and time
+DATE=$(date '+%Y-%m-%d %H:%M:%S')
+TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
+OUTPUT_DIR="/tmp/CPU_Utilization"
+OUTPUT_FILE="$OUTPUT_DIR/CPU_Utilization_$TIMESTAMP.txt"
+
+# Create directory if not exists
+[ ! -d "$OUTPUT_DIR" ] && mkdir -p "$OUTPUT_DIR"
+
+# Capture general system information in parallel
+HOSTNAME=$(hostname)
+DISK_USAGE=$(df -h) &
+CPU_USAGE_TOP=$(top -b -n1 | grep "Cpu(s)" | awk '{print $2 + $4}') &
+CPU_USAGE_VMSTAT=$(vmstat 1 1 | tail -1 | awk '{print $13+$14}') &
+MEMORY_USAGE=$(free -h | grep "Mem:" | awk '{print "Total: "$2", Used: "$3", Free: "$4}') &
+UPTIME_P=$(uptime -p) &
+UPTIME_S=$(uptime -s) &
+TCP_CONNECTIONS=$(ss -t | wc -l) &
+RUNNING_PROCESSES=$(ps -e --no-headers | wc -l) &
+# Wait for all background processes to finish
+wait
+
+# Capture top FIDs after parallel execution
+TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in cpu) print u, cpu[u]}' | sort -k2 -nr | head -n 5)
+
+{
+    echo "Report generated on: [$DATE] for Hostname: $HOSTNAME"
+    echo "*****"
+    
+    print_header "Top 5 Memory-Consuming Processes"
+    ps aux --sort=-%mem | awk '{print $2, $4, substr($0, index($0, $11))}' | head -n 6 | while read -r pid mem cmd; do
+        echo "PID: $pid | MEM: $mem%"
+        echo "Command: $(echo "$cmd" | cut -c 1-1000)"
+        echo "*****"
+    done
+    
+    print_header "Top 5 CPU-Consuming Processes"
+    ps aux --sort=-%cpu | awk '{print $2, $3, substr($0, index($0, $11))}' | head -n 6 | while read -r pid cpu cmd; do
+        echo "PID: $pid | CPU: $cpu%"
+        echo "Command: $(echo "$cmd" | cut -c 1-1000)"
+        echo "*****"
+    done
+    
+    print_header "Additional System Information"
+    echo "CPU Utilization (top): $CPU_USAGE_TOP%"
+    echo "*****"
+    echo "CPU Utilization (vmstat): $CPU_USAGE_VMSTAT%"
+    echo "*****"
+    echo "Memory Usage: $MEMORY_USAGE"
+    echo "*****"
+    echo "System Uptime and Load Average: $(uptime)"
+    echo "*****"
+    echo "TCP Connections: $TCP_CONNECTIONS"
+    echo "*****"
+    echo "Running Processes: $RUNNING_PROCESSES"
+    echo "*****"
+    
+    # print_header "Per-Core CPU Utilization"
+    # echo "$MPSTAT_OUTPUT"
+    
+    # print_header "Detailed CPU Stats"
+    # echo "$IOSTAT_OUTPUT"
+    
+    print_header "Disk Usage (All Mounted Filesystems)"
+    echo "$DISK_USAGE"
+    echo "*****"
+    
+    print_header "Uptime (Human-Readable)"
+    echo "System has been $UPTIME_P"
+    echo "*****"
+    
+    print_header "System Start Time"
+    echo "System started on: $UPTIME_S"
+    echo "*****"
+    
+} | tee "$OUTPUT_FILE"
+
+echo
+print_header "Top 5 FIDs by Total CPU Utilization"
+echo "No.  FID         Total CPU%"
+echo "$TOP_FID_CPU" | nl -w2 -s'. '
+echo "*****"
+
+echo
+read -p "Select an FID by entering the corresponding number: " FID_SELECTION
+SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1}')
+
+print_header "Top 10 CPU-consuming processes for FID '$SELECTED_FID'"
+# Display truncated command line for readability and save full command to file
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | while read -r pid cpu cmd; do
+    echo "PID: $pid | CPU: $cpu%"
+    echo "Command: $(echo "$cmd" | cut -c 1-1000)"
+    echo "*****"
+    echo "$pid $cpu $cmd" >> "$OUTPUT_FILE" # Save full command to file
+done
+
+print_header "End of Report"
+echo "Detailed information saved to: $OUTPUT_FILE"
