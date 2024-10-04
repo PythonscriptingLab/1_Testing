@@ -104,3 +104,20 @@ done
 
 print_header "End of Report"
 echo "Detailed information saved to: $OUTPUT_FILE"
+
+
+ORIGINAL_USER=$(who | head -n 1 | awk '{print $1}')
+USER_EMAIL="${ORIGINAL_USER}@xyz.com"
+
+# Rest of the script...
+
+# Prompt to send the file via email
+read -p "Do you want to send the report to your email address ($USER_EMAIL)? (y/n): " SEND_EMAIL
+
+if [[ $SEND_EMAIL == [Yy]* ]]; then
+    echo "Sending report to $USER_EMAIL..."
+    mail -s "CPU Utilization Report" -a "$OUTPUT_FILE" "$USER_EMAIL" <<< "Please find the attached CPU utilization report."
+    echo "Report sent to $USER_EMAIL."
+else
+    echo "Report not sent."
+fi
