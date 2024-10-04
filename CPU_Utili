@@ -6,11 +6,6 @@ print_header() {
     echo "====== $1 ======"
 }
 
-# Optional: Function to add color for critical information (e.g., CPU usage)
-print_critical() {
-    tput setaf 1; echo "$1"; tput sgr0
-}
-
 # Capture date and time
 DATE=$(date '+%Y-%m-%d %H:%M:%S')
 TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
@@ -77,6 +72,6 @@ SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1
 
 echo
 print_header "Top 10 CPU-consuming processes for FID '$SELECTED_FID'"
-ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,comm | head -n 10 | tee -a "$OUTPUT_FILE"
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | tee -a "$OUTPUT_FILE"
 print_header "End of Report"
 echo "Detailed information saved to: $OUTPUT_FILE"
