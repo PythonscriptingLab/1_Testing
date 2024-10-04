@@ -72,6 +72,12 @@ SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1
 
 echo
 print_header "Top 10 CPU-consuming processes for FID '$SELECTED_FID'"
-ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | tee -a "$OUTPUT_FILE"
+# Display truncated command line for readability and save full command to file
+echo "PID     %CPU   COMMAND"
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | while read -r pid cpu cmd; do
+    truncated_cmd=$(echo "$cmd" | cut -c 1-100) # Limit to 100 characters
+    printf "%-8s %-5s %s\n" "$pid" "$cpu" "$truncated_cmd"
+    echo "$pid $cpu $cmd" >> "$OUTPUT_FILE" # Full command in the file
+done
 print_header "End of Report"
 echo "Detailed information saved to: $OUTPUT_FILE"
