@@ -29,7 +29,6 @@ UPTIME=$(uptime -p)
 LOAD_AVG=$(uptime | awk -F'load average:' '{ print $2 }')
 TCP_CONNECTIONS=$(ss -t | wc -l)
 RUNNING_PROCESSES=$(ps -e --no-headers | wc -l)
-TOP_MEMORY_PROCESSES=$(ps aux --sort=-%mem | head -n 6)
 TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in cpu) print u, cpu[u]}' | sort -k2 -nr | head -n 5)
 
 {
@@ -63,8 +62,12 @@ TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in 
     echo
     
     print_header "Top 5 Memory-Consuming Processes"
-    echo "$TOP_MEMORY_PROCESSES"
-    echo "*****"
+    ps aux --sort=-%mem | awk '{print $2, $4, substr($0, index($0, $11))}' | head -n 6 | while read -r pid mem cmd; do
+        echo "PID: $pid | MEM: $mem%"
+        echo "Command: $(echo "$cmd" | cut -c 1-300)"
+        echo "*****"
+    done
+    echo
     
     print_header "Top 5 CPU-Consuming Processes"
     ps aux --sort=-%cpu | awk '{print $2, $3, substr($0, index($0, $11))}' | head -n 6 | while read -r pid cpu cmd; do
