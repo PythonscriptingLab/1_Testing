@@ -4,6 +4,7 @@
 print_header() {
     echo
     echo "====== $1 ======"
+    echo
 }
 
 # Capture date and time
@@ -29,35 +30,61 @@ LOAD_AVG=$(uptime | awk -F'load average:' '{ print $2 }')
 TCP_CONNECTIONS=$(ss -t | wc -l)
 RUNNING_PROCESSES=$(ps -e --no-headers | wc -l)
 TOP_MEMORY_PROCESSES=$(ps aux --sort=-%mem | head -n 6)
-TOP_CPU_PROCESSES=$(ps aux --sort=-%cpu | head -n 6)
 TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in cpu) print u, cpu[u]}' | sort -k2 -nr | head -n 5)
 
 {
+    echo
     echo "Report generated on: [$DATE] for Hostname: $HOSTNAME"
+    
     print_header "CPU Utilization (top)"
     echo "Current CPU Usage: $CPU_USAGE_TOP%"
+    echo
+    
     print_header "CPU Utilization (vmstat)"
     echo "CPU Usage (vmstat): $CPU_USAGE_VMSTAT%"
+    echo
+    
     print_header "Disk Usage"
     echo "Disk Usage of Root Partition: $DISK_USAGE"
+    echo
+    
     print_header "Memory Usage"
     echo "$MEMORY_USAGE"
+    echo
+    
     print_header "System Uptime and Load Average"
     echo "Uptime: $UPTIME"
     echo "Load Average: $LOAD_AVG"
+    echo
+    
     print_header "TCP Connections and Running Processes"
     echo "Active TCP Connections: $TCP_CONNECTIONS"
     echo "Running Processes: $RUNNING_PROCESSES"
+    echo
+    
     print_header "Top 5 Memory-Consuming Processes"
     echo "$TOP_MEMORY_PROCESSES"
+    echo "*****"
+    
     print_header "Top 5 CPU-Consuming Processes"
-    echo "$TOP_CPU_PROCESSES"
+    ps aux --sort=-%cpu -o pid,%cpu,cmd | head -n 6 | while read -r pid cpu cmd; do
+        echo "PID: $pid | CPU: $cpu%"
+        echo "Command: $(echo "$cmd" | cut -c 1-300)"
+        echo "*****"
+    done
+    echo
+    
     print_header "Per-Core CPU Utilization"
     echo "$MPSTAT_OUTPUT"
+    echo
+    
     print_header "Detailed CPU Stats (iostat)"
     echo "$IOSTAT_OUTPUT"
+    echo
+    
     print_header "CPU Usage from /proc/stat"
     echo "CPU Usage: $PROC_STAT%"
+    echo
 } | tee "$OUTPUT_FILE"
 
 # Show top FIDs and prompt for user input
@@ -73,11 +100,11 @@ SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1
 echo
 print_header "Top 10 CPU-consuming processes for FID '$SELECTED_FID'"
 # Display truncated command line for readability and save full command to file
-echo "PID     %CPU   COMMAND"
-ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | while read -r pid cpu cmd; do
-    truncated_cmd=$(echo "$cmd" | cut -c 1-100) # Limit to 100 characters
-    printf "%-8s %-5s %s\n" "$pid" "$cpu" "$truncated_cmd"
-    echo "$pid $cpu $cmd" >> "$OUTPUT_FILE" # Full command in the file
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | while read -r pid cpu cmd; do
+    echo "PID: $pid | CPU: $cpu%"
+    echo "Command: $(echo "$cmd" | cut -c 1-300)"
+    echo "*****"
+    echo "$pid $cpu $cmd" >> "$OUTPUT_FILE" # Save full command to file
 done
 print_header "End of Report"
 echo "Detailed information saved to: $OUTPUT_FILE"
