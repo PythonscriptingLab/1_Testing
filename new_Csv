@@ -31,18 +31,18 @@ TCP_CONNECTIONS=$(ss -t | wc -l)
 RUNNING_PROCESSES=$(ps -e --no-headers | wc -l)
 TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in cpu) print u, cpu[u]}' | sort -k2 -nr | head -n 5)
 
-# Save to CSV format
+# Save initial information to CSV
 {
     echo "Report generated on:,[$DATE],for Hostname:,$HOSTNAME"
     echo "Top 5 Memory-Consuming Processes"
     echo "PID,Memory (%),Command"
     ps aux --sort=-%mem | awk '{print $2, $4, substr($0, index($0, $11))}' | head -n 6 | while read -r pid mem cmd; do
-        echo "$pid,$mem,\"$(echo "$cmd" | cut -c 1-1000)\""
+        echo "$pid,$mem,\"$cmd\""
     done
     echo "Top 5 CPU-Consuming Processes"
     echo "PID,CPU (%),Command"
     ps aux --sort=-%cpu | awk '{print $2, $3, substr($0, index($0, $11))}' | head -n 6 | while read -r pid cpu cmd; do
-        echo "$pid,$cpu,\"$(echo "$cmd" | cut -c 1-1000)\""
+        echo "$pid,$cpu,\"$cmd\""
     done
     echo "Additional System Information"
     echo "Metric,Value"
@@ -62,11 +62,15 @@ TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in 
 # Display human-readable output in terminal
 echo "Report generated on: [$DATE] for Hostname: $HOSTNAME"
 print_header "Top 5 Memory-Consuming Processes"
-ps aux --sort=-%mem | awk '{printf "PID: %-10s Memory: %-5s Command: %s\n", $2, $4, substr($0, index($0, $11))}' | head -n 6
+ps aux --sort=-%mem | awk '{print $2, $4, substr($0, index($0, $11))}' | head -n 6 | while read -r pid mem cmd; do
+    printf "PID: %-10s Memory: %-5s Command: %s\n" "$pid" "$mem" "$(echo "$cmd" | cut -c 1-1000)"
+done
 echo "*****"
 
 print_header "Top 5 CPU-Consuming Processes"
-ps aux --sort=-%cpu | awk '{printf "PID: %-10s CPU: %-5s Command: %s\n", $2, $3, substr($0, index($0, $11))}' | head -n 6
+ps aux --sort=-%cpu | awk '{print $2, $3, substr($0, index($0, $11))}' | head -n 6 | while read -r pid cpu cmd; do
+    printf "PID: %-10s CPU: %-5s Command: %s\n" "$pid" "$cpu" "$(echo "$cmd" | cut -c 1-1000)"
+done
 echo "*****"
 
 print_header "Additional System Information"
@@ -95,11 +99,18 @@ echo "No.  FID         Total CPU (%)"
 echo "$TOP_FID_CPU" | nl -w2 -s'. ' | awk '{printf "%-4s %-10s %-10s\n", $1, $2, $3}'
 echo "*****"
 
+# User selects FID and the details are appended to CSV file
 read -p "Select an FID by entering the corresponding number: " FID_SELECTION
 SELECTED_FID=$(echo "$TOP_FID_CPU" | sed -n "${FID_SELECTION}p" | awk '{print $1}')
 
 print_header "Top 10 CPU-consuming processes for FID '$SELECTED_FID'"
-ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | awk '{printf "PID: %-10s CPU: %-5s Command: %s\n", $1, $2, substr($0, index($0, $3))}'
+echo "PID,CPU (%),Command" >> "$OUTPUT_FILE"
+ps -u "$SELECTED_FID" --sort=-%cpu -o pid,%cpu,cmd | head -n 10 | while read -r pid cpu cmd; do
+    # Display in terminal with truncation
+    printf "PID: %-10s CPU: %-5s Command: %s\n" "$pid" "$cpu" "$(echo "$cmd" | cut -c 1-1000)"
+    # Save full command to CSV file
+    echo "$pid,$cpu,\"$cmd\"" >> "$OUTPUT_FILE"
+done
 
 # Prompt to email the CSV file
 ORIGINAL_USER=$(who | head -n 1 | awk '{print $1}')
