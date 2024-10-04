@@ -53,8 +53,8 @@ TOP_MEMORY_PROCESSES=$(ps aux --sort=-%mem | head -n 6)
 # 16. Capture top 5 CPU-hogging processes
 TOP_CPU_PROCESSES=$(ps aux --sort=-%cpu | head -n 6)
 
-# 17. Capture all unique FIDs running on the machine
-FIDS=$(ps -eo user | sort | uniq)
+# 17. Calculate top 5 FIDs by total CPU utilization
+TOP_FID_CPU=$(ps -eo user,%cpu --sort=-%cpu | awk '{cpu[$1]+=$2} END {for (u in cpu) print u, cpu[u]}' | sort -k2 -nr | head -n 5)
 
 # 18. Write the information to both the output file and the console using 'tee'
 {
@@ -86,8 +86,9 @@ FIDS=$(ps -eo user | sort | uniq)
     echo
     echo "CPU Usage from /proc/stat: $PROC_STAT%"
     echo
-    echo "List of all unique FIDs running on the machine:"
-    echo "$FIDS"
+    echo "Top 5 FIDs by Total CPU Utilization:"
+    echo "FID, Total CPU%"
+    echo "$TOP_FID_CPU"
 } | tee "$OUTPUT_FILE"
 
 # Optional message to confirm that the output has been saved
