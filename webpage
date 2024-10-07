@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Port Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #e3f2fd;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        header, footer {
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            background-color: #64b5f6;
+            color: white;
+            font-size: 1.5rem;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px 0;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        h2, h3 {
+            font-size: 1.25rem;
+            color: #0277bd;
+            margin-bottom: 20px;
+        }
+        input[type="text"], select, button {
+            width: 95%;
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #808080;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #1e88e5;
+        }
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        label {
+            margin: 5px 0;
+        }
+        .select-all {
+            margin-bottom: 20px;
+        }
+        .button-container {
+            margin-top: 30px;
+        }
+        select, input[type="text"] {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <header>DETAILS</header>
+
+    <!-- First Container -->
+    <div class="container">
+        <h2>Enter Server Name for Download</h2>
+        <input type="text" id="serverName" placeholder="Enter server name">
+
+        <!-- Select All checkbox at the top -->
+        <h3>Select Details to Download</h3>
+        <div class="select-all">
+            <label><input type="checkbox" id="selectAll" onclick="toggleAllCheckboxes('selectAll', 'fruit-checkbox')"> Select All</label>
+        </div>
+
+        <!-- Multi-select checkboxes for fruits in 3 columns -->
+        <div class="checkbox-container">
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="fruit-checkbox" value="Apple"> Apple</label>
+                <label><input type="checkbox" class="fruit-checkbox" value="Orange"> Orange</label>
+                <label><input type="checkbox" class="fruit-checkbox" value="Lemon"> Lemon</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="fruit-checkbox" value="Kiwi"> Kiwi</label>
+                <label><input type="checkbox" class="fruit-checkbox" value="Pomegranate"> Pomegranate</label>
+                <label><input type="checkbox" class="fruit-checkbox" value="Banana"> Banana</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="fruit-checkbox" value="Grapes"> Grapes</label>
+                <label><input type="checkbox" class="fruit-checkbox" value="Mango"> Mango</label>
+                <label><input type="checkbox" class="fruit-checkbox" value="Pineapple"> Pineapple</label>
+            </div>
+        </div>
+
+        <!-- Button below checkboxes -->
+        <div class="button-container">
+            <button onclick="downloadCSV()">Download Report</button>
+        </div>
+    </div>
+
+    <!-- Second Container with Dropdowns and Checkboxes -->
+    <div class="container">
+        <h2>Gather Information for Multiple Apps</h2>
+
+        <!-- Dropdown for Environment -->
+        <select id="environment">
+            <option disabled selected>Select Environment</option>
+            <option value="all env">All Environments</option>
+            <option value="prod">Production</option>
+            <option value="uat">UAT</option>
+            <option value="dev">Development</option>
+        </select>
+
+        <!-- Dropdown for LOB -->
+        <select id="lob">
+            <option disabled selected>Select LOB</option>
+            <!-- Add LOB options as necessary -->
+        </select>
+
+        <!-- Dropdown for App -->
+        <select id="app">
+            <option disabled selected>Select App</option>
+            <option value="app1">App1</option>
+            <option value="app2">App2</option>
+            <option value="app3">App3</option>
+        </select>
+
+        <!-- Select All checkbox at the top -->
+        <h3>Select Details to Download</h3>
+        <div class="select-all">
+            <label><input type="checkbox" id="selectAllApps" onclick="toggleAllCheckboxes('selectAllApps', 'app-checkbox')"> Select All</label>
+        </div>
+
+        <!-- Multi-select checkboxes for apps in 3 columns -->
+        <div class="checkbox-container">
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="app-checkbox" value="Apple"> Apple</label>
+                <label><input type="checkbox" class="app-checkbox" value="Orange"> Orange</label>
+                <label><input type="checkbox" class="app-checkbox" value="Lemon"> Lemon</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="app-checkbox" value="Kiwi"> Kiwi</label>
+                <label><input type="checkbox" class="app-checkbox" value="Pomegranate"> Pomegranate</label>
+                <label><input type="checkbox" class="app-checkbox" value="Banana"> Banana</label>
+            </div>
+            <div class="checkbox-group">
+                <label><input type="checkbox" class="app-checkbox" value="Grapes"> Grapes</label>
+                <label><input type="checkbox" class="app-checkbox" value="Mango"> Mango</label>
+                <label><input type="checkbox" class="app-checkbox" value="Pineapple"> Pineapple</label>
+            </div>
+        </div>
+
+        <!-- Button below checkboxes -->
+        <div class="button-container">
+            <button onclick="downloadCSVApps()">Download Report</button>
+        </div>
+    </div>
+
+    <footer>Contact us at: contact@example.com</footer>
+
+    <script>
+        // Function to toggle all checkboxes based on Select All
+        function toggleAllCheckboxes(selectAllId, checkboxClass) {
+            const selectAll = document.getElementById(selectAllId);
+            const checkboxes = document.querySelectorAll('.' + checkboxClass);
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        // Function to download the CSV file for the first container
+        function downloadCSV() {
+            const serverName = document.getElementById('serverName').value || 'No Server Name';
+            const checkboxes = document.querySelectorAll('.fruit-checkbox:checked');
+            const selectedFruits = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+            if (selectedFruits.length === 0) {
+                alert("Please select at least one fruit!");
+                return;
+            }
+
+            // CSV header
+            let csvContent = "S.No,Hostname," + selectedFruits.join(',') + "\n";
+            // Sample data for ports (you can modify this as per actual data)
+            const portData = {
+                "Apple": "8080",
+                "Orange": "9090",
+                "Lemon": "7070",
+                "Kiwi": "6060",
+                "Pomegranate": "5050",
+                "Banana": "4040",
+                "Grapes": "3030",
+                "Mango": "2020",
+                "Pineapple": "1010"
+            };
+
+            // Creating sample rows with port information
+            selectedFruits.forEach((fruit, index) => {
+                csvContent += `${index + 1},${serverName},${portData[fruit] || 'N/A'}\n`;
+            });
+
+            // Create CSV file and download
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `report_${serverName}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Function to download the CSV file for the second container (apps)
+        function downloadCSVApps() {
+            const checkboxes = document.querySelectorAll('.app-checkbox:checked');
+            const selectedApps = Array.from(checkboxes).map(checkbox => checkbox.value);
+
+            if (selectedApps.length === 0) {
+                alert("Please select at least one app!");
+                return;
+            }
+
+            // CSV header
+            let csvContent = "S.No,AppName," + selectedApps.join(',') + "\n";
+            // Sample data for ports (you can modify this as per actual data)
+            const portData = {
+                "Apple": "8080",
+                "Orange": "9090",
+                "Lemon": "7070",
+                "Kiwi": "6060",
+                "Pomegranate": "5050",
+                "Banana": "4040",
+                "Grapes": "3030",
+                "Mango": "2020",
+                "Pineapple": "1010"
+            };
+
+            // Creating sample rows with port information
+            selectedApps.forEach((app, index) => {
+                csvContent += `${index + 1},App${index + 1},${portData[app] || 'N/A'}\n`;
+            });
+
+            // Create CSV file and download
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `apps_report.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
