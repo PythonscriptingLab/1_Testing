@@ -1,0 +1,5 @@
+awk -F: '{ print "FID: " $1 ", UID: " $3 ", GID: " $4 }' /etc/passwd
+
+group 
+
+awk -F: '{ print "Group: " $1 ", GID: " $3 }' /etc/group
