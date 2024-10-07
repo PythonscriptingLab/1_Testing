@@ -1,0 +1,22 @@
+---
+- name: Fetch details from multiple servers
+  hosts: all
+  tasks:
+    - name: Gather server details and save to a file
+      shell: |
+        echo "Server: {{ inventory_hostname }}" >> /tmp/server_info.txt
+        df -h >> /tmp/server_info.txt  # Example command to fetch disk usage
+      register: command_output
+      ignore_errors: yes
+
+    - name: Fetch the file to control node
+      fetch:
+        src: /tmp/server_info.txt
+        dest: /tmp/fetched/{{ inventory_hostname }}_server_info.txt
+        flat: yes
+
+- name: Move fetched files to 123456
+  hosts: localhost
+  tasks:
+    - name: Copy fetched files to /tmp/ on 123456
+      command: scp /tmp/fetched/* user@123456:/tmp/
