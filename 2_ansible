@@ -9,3 +9,5 @@
 
     - name: Write output to a file on the control machine
       local_action: copy content="{{ ps_output.stdout }}" dest="./output_{{ inventory_hostname }}.txt"
+
+ansible-playbook -i hosts.ini run_ps_command.yml
