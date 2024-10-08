@@ -1,0 +1,16 @@
+---
+- hosts: all_servers
+  gather_facts: no
+  tasks:
+    - name: Run ps command to get PID, FID (ignoring first two letters), GID, and CPU usage
+      shell: |
+        ps -eo pid,user,uid,gid,pcpu,pmem,args --sort=-pcpu | \
+        awk '!seen[$1]++' | grep -vE "^[a-z]{2}[0-9]+"
+      register: ps_output
+
+    - name: Show ps command output
+      debug:
+        var: ps_output.stdout
+
+    - name: Write output to a file on the control machine
+      local_action: copy content="{{ ps_output.stdout }}" dest="./output_{{ inventory_hostname }}.txt"
