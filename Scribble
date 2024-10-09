@@ -29,3 +29,11 @@ ps -eo user,gid,pid,comm --sort=user | awk 'NR==1 {print "USER       GROUP      
 *****
 
 ps -eo user,gid,pid,comm --sort=user | awk 'NR==1 {print "USER       GROUP      PID       COMMAND"} NR>1 { system("id -gn " $1 " 2>/dev/null") | getline group; if (!seen[$1, group]++) printf "%-10s %-10s %-10s %-10s\n", $1, group, $3, $4 }' | grep -vE "[a-z]{2}[0-9]+" | sort -u -k1,2
+
+***********
+
+ps -eo user,gid,pid,comm --sort=user | (
+    head -n 1
+    tail -n +2 | awk '{ system("id -gn " $1 " 2>/dev/null") | getline group; if (!seen[$1, group]++) printf "%-10s %-10s %-10s %-10s\n", $1, group, $3, $4 }'
+) | grep -vE "[a-z]{2}[0-9]+" | sort -u -k1,2
+
