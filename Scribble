@@ -19,3 +19,8 @@ ps -eo user,gid,pid,comm --sort=user | (
         printf "%-10s %-10s %-10s %-10s\n" "$user" "$group" "$pid" "$comm"; 
     done
 ) | grep -vE "[a-z]{2}[0-9]+" | sort -u -k1,2
+
+
+********************
+
+ps -eo user,gid,pid,comm --sort=user | awk 'NR==1 {print "USER       GROUP      PID       COMMAND"} NR>1 { system("id -gn " $1 " 2>/dev/null") | getline group; print $1, group, $3, $4 }' | grep -vE "[a-z]{2}[0-9]+" | sort -u -k1,2
