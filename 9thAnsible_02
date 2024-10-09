@@ -1,0 +1,13 @@
+---
+- name: Collect remote server hostname
+  hosts: servers
+  become: yes
+  tasks:
+    - name: Show the remote server's hostname
+      debug:
+        var: ansible_hostname
+
+    - name: Save the hostname to a file
+      shell: echo {{ ansible_hostname }} > /tmp/fid/hostname_$(date +%Y%m%d%H%M%S).txt
+      args:
+        executable: /bin/bash
