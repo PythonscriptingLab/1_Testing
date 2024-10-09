@@ -7,3 +7,13 @@ getline group: Captures the group name and stores it in the variable group.
 2>/dev/null: Suppresses error messages in case id doesn't return anything (for example, if there's an issue with the user lookup).
 grep -vE "[a-z]{2}[0-9]+": Filters out unwanted results as per your original command.
 uniq: Removes duplicate entries.
+
+
+
+
+*******************************************
+
+ps -eo user,gid,pid,comm --sort=user | while read user gid pid comm; do 
+    group=$(id -gn "$user" 2>/dev/null); 
+    printf "%-10s %-10s %-10s %-10s\n" "$user" "$group" "$pid" "$comm"; 
+done | grep -vE "[a-z]{2}[0-9]+" | uniq
