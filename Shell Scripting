@@ -1,0 +1,9 @@
+ps -eo user,gid,pid,comm --sort=user | awk '{ system("id -gn " $1 " 2>/dev/null") | getline group; $2=group; print }' | grep -vE "[a-z]{2}[0-9]+" | uniq
+
+
+ps -eo user,gid,pid,comm --sort=user: This lists the user, GID, PID, and the command, sorted by user.
+awk: For each user, it uses system("id -gn " $1) to dynamically fetch the group name for the user. It then replaces the GID field with the group name.
+getline group: Captures the group name and stores it in the variable group.
+2>/dev/null: Suppresses error messages in case id doesn't return anything (for example, if there's an issue with the user lookup).
+grep -vE "[a-z]{2}[0-9]+": Filters out unwanted results as per your original command.
+uniq: Removes duplicate entries.
