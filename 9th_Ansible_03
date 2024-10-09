@@ -1,0 +1,22 @@
+---
+- name: Run shell command to gather user, group, PID, and command data
+  hosts:
+    - server  
+    - server2         
+    - server3
+  become: yes
+  tasks:
+
+    - name: Run shell command and save output to /tmp directory
+      shell: |
+        ps -eo user,gid,pid,comm --sort=user | (head -n 1 && tail -n +2 | while read user gid pid comm; do 
+            group=$(id -gn "$user" 2>/dev/null); 
+            printf "%-10s %-10s %-10s %-10s\n" "$user" "$group" "$pid" "$comm"; 
+        done | grep -vE "[a-z]{2}[0-9]+" | sort -u -k1,2) > /tmp/user_group_pid_comm_$(date +%Y%m%d%H%M%S).txt
+      args:
+        executable: /bin/bash
+      register: command_output
+
+    - name: Display the output file created
+      debug:
+        var: command_output
