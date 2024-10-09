@@ -17,3 +17,11 @@ ps -eo user,gid,pid,comm --sort=user | while read user gid pid comm; do
     group=$(id -gn "$user" 2>/dev/null); 
     printf "%-10s %-10s %-10s %-10s\n" "$user" "$group" "$pid" "$comm"; 
 done | grep -vE "[a-z]{2}[0-9]+" | uniq
+
+
+****************************************
+
+ps -eo user,gid,pid,comm --sort=user | (head -n 1 && tail -n +2 | while read user gid pid comm; do 
+    group=$(id -gn "$user" 2>/dev/null); 
+    printf "%-10s %-10s %-10s %-10s\n" "$user" "$group" "$pid" "$comm"; 
+done | grep -vE "[a-z]{2}[0-9]+" | sort -u -k1,2)
