@@ -1,0 +1,21 @@
+---
+- name: Collect disk usage and save to CSV
+  hosts: servers
+  become: yes  # If root privileges are required
+  tasks:
+
+    - name: Ensure the /tmp/fid directory exists
+      file:
+        path: /tmp/fid
+        state: directory
+        mode: '0777'
+
+    - name: Run df -h and save output to CSV
+      shell: df -h > /tmp/fid/output_$(date +%Y%m%d%H%M%S).csv
+      args:
+        executable: /bin/bash
+
+    - name: Set permissions for the output CSV file
+      file:
+        path: /tmp/fid/output_*.csv
+        mode: '0777'
