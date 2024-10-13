@@ -1,0 +1,105 @@
+from flask import Flask, request, render_template_string, jsonify, Response
+import requests
+import json  # Import to handle JSON
+
+app = Flask(__name__)
+
+# Basic HTML template to take user input and show results
+html_template = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Execute Command</title>
+</head>
+<body>
+    <h1>Execute Command on Remote Server</h1>
+    <form method="POST" action="/execute">
+        <label for="server_ip">Server IP:</label>
+        <input type="text" id="server_ip" name="server_ip" placeholder="Enter server IP" required><br><br>
+        
+        <label for="command">Command:</label>
+        <input type="text" id="command" name="command" placeholder="Enter command" required><br><br>
+        
+        <button type="submit">Execute</button>
+    </form>
+
+    {% if result %}
+        <h2>Command Output:</h2>
+        <pre>{{ result }}</pre>
+        
+        <!-- Download button with serialized JSON output -->
+        <form method="GET" action="/download">
+            <input type="hidden" name="output" value="{{ result_json }}"> <!-- Now passing JSON string -->
+            <button type="submit">Download Output</button>
+        </form>
+    {% endif %}
+</body>
+</html>
+"""
+
+@app.route('/', methods=['GET'])
+def index():
+    return render_template_string(html_template)
+
+@app.route('/execute', methods=['POST'])
+def execute_command():
+    server_ip = request.form['server_ip']
+    command = request.form['command']
+
+    # Prepare the data to send to the agent
+    payload = {
+        "commands": [command]
+    }
+
+    # Send the request to the agent running on the specified server
+    try:
+        url = f"http://{server_ip}:5001/execute"
+        response = requests.post(url, json=payload)
+        result = response.json()  # Properly parsed JSON response from the agent
+
+        # Serialize the result to a JSON string to safely pass it in the hidden field
+        result_json = json.dumps(result)
+
+    except Exception as e:
+        result = f"Error connecting to the agent: {str(e)}"
+        result_json = json.dumps({"error": str(e)})
+
+    return render_template_string(html_template, result=result, result_json=result_json)
+
+@app.route('/download', methods=['GET'])
+def download_output():
+    output = request.args.get('output', '')
+
+    # Decode the string back into JSON
+    try:
+        output_json = json.loads(output)  # Safely parse JSON
+    except Exception as e:
+        return f"Error parsing output: {str(e)}"
+
+    # Convert the output to a human-readable format
+    output_text = format_output(output_json)
+
+    # Create a response to download as a text file
+    return Response(
+        output_text,
+        mimetype="text/plain",
+        headers={"Content-Disposition": "attachment;filename=command_output.txt"}
+    )
+
+def format_output(output):
+    # Convert JSON output into a human-readable format
+    formatted_output = ""
+    for command, details in output.get("commands_executed", {}).items():
+        formatted_output += f"Command: {command}\n"
+        formatted_output += f"Success: {details['success']}\n"
+        if details['success']:
+            formatted_output += f"Output:\n{details['output']}\n"
+        else:
+            formatted_output += f"Error:\n{details['error']}\n"
+        formatted_output += "-" * 50 + "\n"
+
+    return formatted_output
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=3001)
