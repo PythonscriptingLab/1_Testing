@@ -1,0 +1,31 @@
+import subprocess
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/execute', methods=['POST'])
+def execute_command():
+    data = request.get_json()
+    commands = data.get('commands')
+
+    if not commands:
+        return jsonify({"error": "No commands provided"}), 400
+
+    # Execute the commands locally on the server where this agent is running
+    command_output = {}
+    for command in commands:
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            command_output[command] = {
+                "success": result.returncode == 0,
+                "output": result.stdout.strip() if result.returncode == 0 else None,
+                "error": result.stderr.strip() if result.returncode != 0 else None
+            }
+        except Exception as e:
+            command_output[command] = {"success": False, "error": str(e)}
+
+    return jsonify({"commands_executed": command_output})
+
+if __name__ == '__main__':
+    # Start Flask app, listening on port 5001
+    app.run(host='0.0.0.0', port=5001)
