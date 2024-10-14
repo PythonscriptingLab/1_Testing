@@ -1,0 +1,14 @@
+Python 3
+Flask 
+requests
+
+sudo ufw allow 5001
+sudo ufw allow 3001
+sudo ufw reload
+
+requests: Used to make HTTP requests in the second script.
+subprocess: Part of the Python standard library (no need to install).
+json: Part of the Python standard library (no need to install).
+flask: Already covered above.
+
+
