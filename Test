@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Updated by: You
+# Script to check disk space and email affected servers
+
+# Variables
+OPLOG="/apps/install/script/fsck.log"
+TMPPS="/tmp/"
+MAILTO="your_email@domain.com"  # Update with the target email
+TEST_EMAIL="rs97558@citi.com,other_email@domain.com"  # Add all test emails here
+HOSTLIST="/apps/install/script/m.txt"  # File containing hostnames
+AFFECTED_SERVERS=""
+
+# Clear log file
+if [ -f ${OPLOG} ]; then
+    rm ${OPLOG}
+fi
+
+# Header for email/log
+echo "/opt* /apps /logs File Systems are Important to RUN Business" > ${OPLOG}
+echo " " >> ${OPLOG}
+
+# Start checking servers
+for i in $(cat ${HOSTLIST}); do
+    echo "Checking server: $i"
+
+    # Determine OS and get disk usage
+    OST=$(ssh -o "BatchMode yes" $i uname 2>/dev/null)
+    if [ "$OST" == "AIX" ]; then
+        ssh -o "BatchMode yes" $i df -k | egrep -v "proc|mnt|net|boot|rel" | \
+        awk -v hostname="$i" '{if ($3/$2*100 <= 95) print hostname": "$3"(KB free)\t"$4}' >> ${TMPPS}${i}
+    elif [ "$OST" == "Linux" ]; then
+        ssh -o "BatchMode yes" $i df -k | egrep -v "proc|mnt|net|boot|rel" | \
+        awk -v hostname="$i" '{if ($3/$1*100 <= 95) print hostname": "$3"(KB free)\t"$4}' >> ${TMPPS}${i}
+    fi
+
+    # Check if the server has issues
+    LNCNT=$(wc -l ${TMPPS}${i} 2>/dev/null | awk '{print $1}')
+    if [ "$LNCNT" -gt 0 ]; then
+        echo "Adding $i to affected servers"
+        cat ${TMPPS}${i} >> ${OPLOG}
+        echo " " >> ${OPLOG}
+        AFFECTED_SERVERS="${AFFECTED_SERVERS} $i"
+        rm ${TMPPS}${i}
+    fi
+done
+
+# Email affected servers
+if [ -n "${AFFECTED_SERVERS}" ]; then
+    echo "Affected servers: ${AFFECTED_SERVERS}" >> ${OPLOG}
+    cat ${OPLOG} | mailx -s "IGNORE_TEST_EMAIL Attention L2 !! Please check & clear disk spaces" -r "ebizmob@citi.com" ${TEST_EMAIL}
+    echo "Email sent successfully to: ${TEST_EMAIL}"
+else
+    echo "No affected servers found. No email sent."
+fi
